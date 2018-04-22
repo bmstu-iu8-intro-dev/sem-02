@@ -4,7 +4,9 @@
 
 ## План
 * http
-* Сериализация, proto, json, xml
+* Сериализация, json, xml
 * API
 * принципы микросервисов
 * http v2
+* proto
+* gRPC
