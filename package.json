@@ -1,0 +1,7 @@
+{
+  "name": "sem-02",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
