@@ -245,3 +245,8 @@ app.get('/api/v2/books', booksNewApiHandler);
 ### Углубленное чтение
 * http://microservices.io/patterns/microservices.html
 
+* https://grpc.io/blog/vendastagrpc
+* https://blog.netsil.com/http-2-and-grpc-the-next-generation-of-microservices-interactions-aff4ffa6faed
+* https://hpbn.co/http2/#brief-introduction-to-binary-framing
+* https://blog.bugsnag.com/grpc-and-microservices-architecture/
+
