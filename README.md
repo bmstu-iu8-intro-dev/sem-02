@@ -8,9 +8,8 @@
 * HTTP
 * Сериализация, json, xml
 * API
-* HTTPS
 * принципы микросервисов
-* HTTP/2
+* HTTPS и HTTP/2
 * proto
 * gRPC
 
@@ -211,6 +210,79 @@ app.get('/api/v2/books', booksNewApiHandler);
 ```
 Теперь мы можем получить или весь список имеющихся книг, или книги интересующего автора. Для этого клиентам API надо в запросе передать параметр `author`. Пример запроса: `http://localhost/api/v2/books?author=Scott Meyers`.
 
+Для добавления новой книги будем исползовать POST запрос. Данные будем передавать параметрами в теле запроса. Функция для добавления новой книги:
+```js
+function addBookHandler(req, res) {
+    console.log(req.body);
+    // в теле POST запроса должны быть параметры с именами name и author
+    const {name, author} = req.body;
+    if (name && author) {
+        const newObject = {
+            'Name': name,
+            'Author': author
+        };
+        books.push(newObject);
+        // возвращаем статус 201 Created и созданный объект
+        res.status(201).json(newObject);
+    } else {
+        // нет необходимых полей в теле запроса
+        res.status(400).send('Bad Request');
+    }
+}
+```
+
+Удалять книги будем следующим кодом:
+```js
+function removeBookHandler(req, res) {
+    console.log(req.body);
+    const {name, author} = req.body;
+    if (name && author) {
+        // удаляем книгу с названием ${name} автора ${author}
+        books = books.filter( (item) => {
+            return item.Name !== name
+                && item.Author !== author;
+        });
+        res.end(200);
+    } else {
+        res.status(400).send('Bad Request');
+    }
+}
+```
+
+Необходимо изменить код, где мы сообщаем системе какую функцию вызывать для какого запроса. Когда мы обрабатывали только GET запросы, код выглядил так:
+```js
+app.get('/api/v2/books', booksNewApiHandler);
+```
+
+Нам надо его преобразовать следующим образом:
+```js
+app.route('/api/v2/books')
+    .get(booksNewApiHandler)
+    .post(addBookHandler)
+    .delete(removeBookHandler);
+```
+* GET методы будут обрабатываться функцией `booksNewApiHandler`;
+* POST методы будут обрабатываться функцией `addBookHandler`;
+* DELETE методы будут обрабатываться функцией `removeBookHandler`.
+
+Чтобы не писать обработку тела запросов самостоятельно воспользуемся библиотекой *body-parser*. Чтобы установить её, выполним команду
+```
+> npm install body-parser
+```
+
+В код добавим строки:
+```js
+// импортируем библиотеку
+const bodyParser = require('body-parser');
+```
+
+```js
+// используем bodyParser для получения данных из тела запросов
+// подробнее тут https://ru.wikipedia.org/wiki/POST_(HTTP)
+app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+```
+
+Таким образом у нас получился сервер, который может добавлять, удалять и предоставлять доступ к библиотеке. Полный код можно посмотреть по [ссылке](03_api/server.js). Для тестирования сервера можно использовать [curl](https://github.com/curl/curl), [Postman](https://www.getpostman.com/) и другие приложения.
 
 ### Микросервисная архитектура
 В предыдущем разделе был реализован сервис, который может удалять, добавлять и фильтровать список книг. По условию технического задания нам осталось добавить некоторые подфункции. Эти функции довольно сложны и поэтому разрабатываются смежными командами в виде отдельных сервисов. Мы же будем выступать для этих сервисов в качестве потребителей.
@@ -231,18 +303,42 @@ app.get('/api/v2/books', booksNewApiHandler);
 
 ```
 
+### HTTP/2 и HTTPS
+На смену протоколу первой версии HTTP в 2015 году вышел протокол HTTP/2. О его преимуществах можно прочитать в любой статье посвященной этому протоколу. Продемонстрируем, как можно создать сервер с использованием этого стандарта.
+```go
+func main() {
+    http.HandleFunc("/", rootHandler)
+    srv := &http.Server{
+        Addr: ":8000", // Normally ":443"
+        Handler: nil, // http.DefaultServeMux
+    }
+    http2.ConfigureServer(srv, &http2.Server{})
+    srv.ListenAndServeTLS("cert.pem", "key.pem")
+}
+```
+
+Браузеры автоматически переходят на протокол HTTP 1.1, если соединение с сервером не защищено. Поэтому чтобы успешно работать с сервером из браузера по протоколу HTTP/2 необходимо настроить защищенное соединение. Для этого используем метод `ListenAndServeTLS`. Аргументами этого метода служат пути до файлов c серверным сертификатом и до приватного ключа. Эти файлы можно создать, выполнив команду:
+```
+> openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+```
+
+### Protobuf
+
 
 ## Полезные ссылки
 ### Поверхностное чтение
 * https://habr.com/post/215117/
 * https://ru.wikipedia.org/wiki/HTTP
+* https://ru.wikipedia.org/wiki/HTTP/2
 * https://en.wikipedia.org/wiki/Serialization
 * https://ru.wikipedia.org/wiki/JSON
 * https://ru.wikipedia.org/wiki/API
 * https://habr.com/company/nixsolutions/blog/321686/
 * https://habr.com/post/249183/
+* https://4gophers.ru/articles/https-i-go/#.WwSSq4px2Uk
 
 ### Углубленное чтение
+* https://www.ibm.com/developerworks/ru/library/1601_clark-trs/
 * http://microservices.io/patterns/microservices.html
 
 * https://grpc.io/blog/vendastagrpc
