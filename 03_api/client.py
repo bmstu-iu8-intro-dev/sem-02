@@ -13,6 +13,11 @@ def get_json_data():
     if response.status_code == requests.codes.ok:
         books = json.loads(response.text)
         print(books[0]["Author"])
+        
+ def add_book(name, author):
+    r = requests.post("http://bugs.python.org",
+                      data={'name': name, 'author': author})
+    print(r.status_code, r.reason)
 
 
 if __name__ == "__main__":
